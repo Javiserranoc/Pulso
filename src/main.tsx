@@ -15,12 +15,23 @@ import Calendar from './screens/Calendar';
 import Plan from './screens/Plan';
 import SessionForm from './screens/SessionForm';
 import Settings from './screens/Settings';
+import Connections, { PENDING_KEY } from './screens/Connections';
 import { useState } from 'react';
 import DotsBackground from './components/DotsBackground';
 import RibbonBackground from './components/RibbonBackground';
 import Splash from './components/Splash';
 import { useSetting } from './db/hooks';
 import { installGlobalHaptics } from './lib/haptics';
+
+// Debe ir antes de crear el enrutador, que lee la dirección al crearse.
+// Vuelta de la autorización de Strava (?code=…&state=pulso-strava): se guarda el código y se limpia la URL.
+{
+  const q = new URLSearchParams(location.search);
+  if (q.get('state') === 'pulso-strava') {
+    if (q.get('code')) sessionStorage.setItem(PENDING_KEY, q.get('code')!);
+    history.replaceState(null, '', `${location.pathname}#/conexiones`);
+  }
+}
 
 function TabsLayout() {
   const tabs = [
@@ -57,7 +68,8 @@ const router = createHashRouter([
   },
   { path: '/sesion/nueva', element: <SessionForm /> },
   { path: '/sesion/:id', element: <SessionForm /> },
-  { path: '/ajustes', element: <Settings /> }
+  { path: '/ajustes', element: <Settings /> },
+  { path: '/conexiones', element: <Connections /> }
 ]);
 
 installGlobalHaptics();

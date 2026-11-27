@@ -35,3 +35,9 @@ Iconos de deporte e interfaz de [Tabler Icons](https://github.com/tabler/tabler-
 ## Fuentes
 
 Inter, Space Grotesk e Instrument Serif (vía Fontsource), licencia SIL Open Font License 1.1.
+
+## Lectura de actividades
+
+- [fit-file-parser](https://github.com/jimmykane/fit-parser) — licencia MIT (lectura de archivos .fit).
+- [fflate](https://github.com/101arrowz/fflate) — licencia MIT (abrir el .zip de Garmin Connect).
+- [buffer](https://github.com/feross/buffer) — licencia MIT (compatibilidad de fit-file-parser en el navegador).

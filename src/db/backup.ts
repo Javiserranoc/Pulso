@@ -1,6 +1,8 @@
 import { db, type PulsoDB } from './db';
 import type { Session, Setting, Template } from '../domain/types';
 
+const SECRET_KEYS = ['garmin', 'strava', 'proxyUrl'];
+
 export interface Backup {
   app: 'pulso';
   version: 1;
@@ -17,7 +19,8 @@ export async function exportAll(database: PulsoDB = db): Promise<Backup> {
     exportedAt: new Date().toISOString(),
     sessions: await database.sessions.toArray(),
     templates: await database.templates.toArray(),
-    settings: await database.settings.toArray()
+    // Las claves de Garmin/Strava y el intermediario no salen del dispositivo.
+    settings: (await database.settings.toArray()).filter((s) => !SECRET_KEYS.includes(s.key))
   };
 }
 

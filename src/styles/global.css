@@ -195,3 +195,4 @@ input[type='date'].field-input { color-scheme: dark; }
   .btn-round, .btn-pill { background: rgba(20, 22, 26, 0.55); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
   .toast { background: rgba(38, 42, 49, 0.72); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
 }
+@keyframes spin { to { transform: rotate(360deg); } }

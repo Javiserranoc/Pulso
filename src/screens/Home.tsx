@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { IconArrowRight, IconCheck, IconSettings } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck, IconRefresh, IconSettings } from '@tabler/icons-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, updateSession } from '../db/db';
 import { useSessions, useSetting } from '../db/hooks';
@@ -10,7 +10,8 @@ import { fmtDistance, fmtHours, fmtNumber } from '../domain/format';
 import { SPORTS, subtypeName } from '../domain/sports';
 import { weekProgress } from '../domain/stats';
 import type { Session } from '../domain/types';
-import { Ring, SportTile } from '../components/ui';
+import { Ring, SportTile, useToast } from '../components/ui';
+import { hasConnections, syncAll } from '../sync';
 
 export default function Home() {
   const nav = useNavigate();
@@ -23,6 +24,19 @@ export default function Home() {
   const wp = weekProgress(sessions, t);
   const daySessions = sessions.filter((s) => s.date === day).sort((a, b) => a.createdAt - b.createdAt);
   const { week } = isoWeek(t);
+  const toast = useToast();
+  const connected = useLiveQuery(() => hasConnections(), [], false);
+  const nextRace = useLiveQuery(() => db.sessions.where('date').aboveOrEqual(t).filter((s) => s.sport === 'race').first(), [t]);
+  const raceDays = nextRace ? Math.round((parseISODate(nextRace.date).getTime() - parseISODate(t).getTime()) / 864e5) : null;
+  const [syncing, setSyncing] = useState(false);
+  const sync = async () => {
+    setSyncing(true);
+    try {
+      toast.show((await syncAll(14)).text);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <main className="screen">
@@ -34,9 +48,16 @@ export default function Home() {
           </p>
           <h1 style={{ margin: '2px 0 0', fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: 42, lineHeight: 1 }}>{name || 'Pulso'}</h1>
         </div>
-        <Link to="/ajustes" className="btn-round" aria-label="Ajustes">
-          <IconSettings size={20} stroke={1.8} />
-        </Link>
+        <div className="row" style={{ gap: 8 }}>
+          {connected && (
+            <button className="btn-round" aria-label="Sincronizar con Garmin y Strava" data-haptic="success" onClick={sync} disabled={syncing}>
+              <IconRefresh size={20} stroke={1.8} style={syncing ? { animation: 'spin 1s linear infinite' } : undefined} />
+            </button>
+          )}
+          <Link to="/ajustes" className="btn-round" aria-label="Ajustes">
+            <IconSettings size={20} stroke={1.8} />
+          </Link>
+        </div>
       </header>
 
       {total === 0 && (
@@ -54,6 +75,20 @@ export default function Home() {
             </Link>
           </div>
         </section>
+      )}
+
+      {nextRace && raceDays != null && raceDays <= 120 && (
+        <Link to={`/sesion/${nextRace.id}`} className="card card--tight row mt-16" style={{ gap: 12, color: 'inherit' }}>
+          <SportTile sport="race" size={40} on />
+          <span className="stack" style={{ flex: 1, gap: 2, minWidth: 0 }}>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>{nextRace.title || 'Competición'}</span>
+            <span className="muted" style={{ fontSize: 12 }}>{formatLong(nextRace.date)}{nextRace.distanceM ? ` · ${fmtDistance('race', nextRace.distanceM)}` : ''}</span>
+          </span>
+          <span className="stack" style={{ alignItems: 'flex-end' }}>
+            <span className="num" style={{ fontSize: 26, fontWeight: 600, lineHeight: 1 }}>{raceDays === 0 ? '¡Hoy!' : raceDays}</span>
+            {raceDays > 0 && <span className="muted" style={{ fontSize: 11 }}>{raceDays === 1 ? 'día' : 'días'}</span>}
+          </span>
+        </Link>
       )}
 
       <div className="between mt-20" style={{ alignItems: 'baseline' }}>
@@ -154,6 +189,7 @@ export default function Home() {
       <Link to={`/sesion/nueva?fecha=${day}`} className="btn-primary mt-16" style={{ borderRadius: 29, height: 58 }}>
         Registrar sesión <IconArrowRight size={18} stroke={2.2} />
       </Link>
+      {toast.node}
     </main>
   );
 }

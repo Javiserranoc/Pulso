@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { IconArrowLeft, IconCheck, IconCopy, IconTemplate, IconTrash } from '@tabler/icons-react';
-import { addSession, deleteSession, duplicateSession, saveTemplate, updateSession } from '../db/db';
+import { addSession, deleteSession, duplicateSession, repeatWeekly, saveTemplate, updateSession } from '../db/db';
 import { useRecents, useSession, useTemplates } from '../db/hooks';
 import { addDays, DAY_LETTERS, formatShort, parseISODate, today, weekDays } from '../domain/dates';
 import { fmtDistanceValue, fmtDuration, fmtNumber, fmtPace, parseDistance, parseDuration } from '../domain/format';
@@ -48,6 +48,7 @@ export default function SessionForm() {
     gymTags: [],
     status: defaultStatus(initialDate)
   }));
+  const [repeat, setRepeat] = useState(0);
   const loaded = useRef(false);
   useEffect(() => {
     if (existing && !loaded.current) {
@@ -128,7 +129,11 @@ export default function SessionForm() {
   const save = async () => {
     if (distInvalid || timeInvalid) return;
     if (editId) await updateSession(editId, build());
-    else await addSession(build());
+    else {
+      const b = build();
+      await addSession(b);
+      if (repeat && b.sport !== 'rest') await repeatWeekly(b, repeat);
+    }
     nav(-1);
   };
 
@@ -263,6 +268,15 @@ export default function SessionForm() {
       {d.sport !== 'rest' && (
         <div className="mt-12">
           <Segmented<Status> value={d.status} onChange={(status) => set({ status })} options={[{ id: 'planned', label: 'Planificada' }, { id: 'done', label: 'Hecha' }]} />
+        </div>
+      )}
+
+      {!editId && d.sport !== 'rest' && (
+        <div className="row mt-12" style={{ gap: 6 }}>
+          <span className="muted" style={{ fontSize: 13, flex: 1 }}>Repetir cada semana</span>
+          {[0, 4, 8, 12].map((n) => (
+            <button key={n} className="chip chip--soft" aria-pressed={repeat === n} onClick={() => setRepeat(n)}>{n ? `${n} sem.` : 'No'}</button>
+          ))}
         </div>
       )}
 

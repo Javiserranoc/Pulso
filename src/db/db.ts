@@ -16,6 +16,9 @@ export class PulsoDB extends Dexie {
       templates: '++id, sport',
       settings: 'key'
     });
+    this.version(2).stores({
+      sessions: '++id, date, sport, status, [date+sport], externalId'
+    });
     this.on('populate', (tx) => {
       tx.table('templates').bulkAdd(BUILTIN_TEMPLATES);
     });
@@ -80,4 +83,54 @@ export async function getSetting<T>(key: string, fallback: T, database = db): Pr
 
 export async function setSetting(key: string, value: unknown, database = db): Promise<void> {
   await database.settings.put({ key, value });
+}
+
+/** Plantilla de semana completa: sesiones por día de la semana (0 = lunes). */
+export interface WeekTemplate {
+  name: string;
+  items: { dow: number; sport: Session['sport']; subtype?: Session['subtype']; title: string; notes: string; distanceM?: number; gymTags?: string[] }[];
+}
+
+export async function saveWeekTemplate(name: string, anyDate: string, database = db): Promise<WeekTemplate> {
+  const days = weekDays(anyDate);
+  const sessions = await database.sessions.where('date').between(days[0], days[6], true, true).toArray();
+  const tpl: WeekTemplate = {
+    name: name.trim(),
+    items: sessions
+      .filter((s) => s.sport !== 'rest')
+      .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)
+      .map((s) => ({ dow: days.indexOf(s.date), sport: s.sport, subtype: s.subtype, title: s.title, notes: s.notes, distanceM: s.distanceM, gymTags: s.gymTags }))
+  };
+  const all = (await getSetting<WeekTemplate[]>('weekTemplates', [], database)).filter((t) => t.name !== tpl.name);
+  await setSetting('weekTemplates', [...all, tpl], database);
+  return tpl;
+}
+
+export async function deleteWeekTemplate(name: string, database = db): Promise<void> {
+  const all = await getSetting<WeekTemplate[]>('weekTemplates', [], database);
+  await setSetting('weekTemplates', all.filter((t) => t.name !== name), database);
+}
+
+/** Aplica una plantilla a la semana de `anyDate` como sesiones planificadas, sin duplicar. */
+export async function applyWeekTemplate(tpl: WeekTemplate, anyDate: string, database = db): Promise<number> {
+  const days = weekDays(anyDate);
+  const existing = await database.sessions.where('date').between(days[0], days[6], true, true).toArray();
+  const seen = new Set(existing.map((s) => `${s.date}|${s.sport}|${s.title}`));
+  let n = 0;
+  for (const it of tpl.items) {
+    const date = days[it.dow];
+    if (!date || seen.has(`${date}|${it.sport}|${it.title}`)) continue;
+    await addSession({ date, sport: it.sport, subtype: it.subtype, title: it.title, notes: it.notes, distanceM: it.distanceM, gymTags: it.gymTags, status: 'planned' }, database);
+    n++;
+  }
+  return n;
+}
+
+/** Crea la misma sesión planificada en las `weeks` semanas siguientes. */
+export async function repeatWeekly(s: Omit<Session, 'id' | 'createdAt' | 'updatedAt'>, weeks: number, database = db): Promise<number> {
+  for (let k = 1; k <= weeks; k++) {
+    const { source: _s, externalId: _e, durationS: _d, ...rest } = s;
+    await addSession({ ...rest, date: addDays(s.date, 7 * k), status: 'planned' }, database);
+  }
+  return weeks;
 }

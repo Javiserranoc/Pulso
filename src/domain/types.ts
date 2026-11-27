@@ -1,6 +1,7 @@
 export type Sport = 'run' | 'swim' | 'bike' | 'gym' | 'rest' | 'race';
 export type Subtype = 'pool' | 'open_water' | 'road' | 'trainer';
 export type Status = 'planned' | 'done';
+export type Source = 'garmin' | 'strava' | 'file';
 
 /** Una sesión de entrenamiento, planificada o hecha. */
 export interface Session {
@@ -21,6 +22,10 @@ export interface Session {
   /** Tipo de sesión de gimnasio (empuje, tracción…). */
   gymTags?: string[];
   status: Status;
+  /** De dónde vienen la distancia y el tiempo, si se importaron. */
+  source?: Source;
+  /** Identificador de la actividad en origen («garmin:123», «strava:456», «file:…»), para no duplicar. */
+  externalId?: string;
   createdAt: number;
   updatedAt: number;
 }

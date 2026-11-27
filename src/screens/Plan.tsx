@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { IconChevronLeft, IconChevronRight, IconCopy, IconPlus } from '@tabler/icons-react';
-import { addSession, copyWeek } from '../db/db';
-import { useRecents, useSessions, useTemplates } from '../db/hooks';
+import { IconChevronLeft, IconChevronRight, IconCopy, IconPlus, IconTemplate, IconTrash } from '@tabler/icons-react';
+import { addSession, applyWeekTemplate, copyWeek, deleteWeekTemplate, repeatWeekly, saveWeekTemplate, type WeekTemplate } from '../db/db';
+import { useRecents, useSessions, useSetting, useTemplates } from '../db/hooks';
 import { addDays, DAYS, formatLong, formatWeekRange, isoWeek, parseISODate, startOfWeek, today, weekDays } from '../domain/dates';
 import { fmtDistance, fmtNumber } from '../domain/format';
 import { SPORTS, subtypeName, VOLUME_SPORTS } from '../domain/sports';
@@ -18,6 +18,7 @@ export default function Plan() {
   const days = weekDays(anchor);
   const sessions = useSessions(days[0], days[6]) ?? [];
   const [addDay, setAddDay] = useState<string | null>(null);
+  const [tplOpen, setTplOpen] = useState(false);
   const toast = useToast();
   const { week } = isoWeek(anchor);
   const plan = weekProgress(sessions, anchor).plan;
@@ -43,10 +44,13 @@ export default function Plan() {
         <button className="btn-ghost btn-soft-blue" data-haptic="success" style={{ flex: 1, fontSize: 13 }} onClick={copyPrev}>
           <IconCopy size={16} /> Copiar semana anterior
         </button>
-        {anchor === startOfWeek(t) && (
-          <button className="btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={() => go(1)}>Planificar la siguiente</button>
-        )}
+        <button className="btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={() => setTplOpen(true)}>
+          <IconTemplate size={16} /> Plantillas
+        </button>
       </div>
+      {anchor === startOfWeek(t) && (
+        <button className="btn-ghost mt-8" style={{ width: '100%', fontSize: 13 }} onClick={() => go(1)}>Planificar la semana siguiente →</button>
+      )}
 
       <div className="mt-12">
         {days.map((d, i) => {
@@ -94,6 +98,7 @@ export default function Plan() {
       </section>
 
       <AddSheet day={addDay} onClose={() => setAddDay(null)} onAdded={(m) => { setAddDay(null); toast.show(m); }} />
+      <WeekTemplatesSheet open={tplOpen} anchor={anchor} onClose={() => setTplOpen(false)} onDone={(m) => { setTplOpen(false); toast.show(m); }} />
       {toast.node}
     </main>
   );
@@ -115,6 +120,7 @@ function AddSheet({ day, onClose, onAdded }: { day: string | null; onClose: () =
   const recents = useRecents(10);
   const templates = useTemplates() ?? [];
   const [filter, setFilter] = useState<Sport | 'all'>('all');
+  const [repeat, setRepeat] = useState(0);
   if (!day) return null;
 
   const seen = new Set<string>();
@@ -130,8 +136,10 @@ function AddSheet({ day, onClose, onAdded }: { day: string | null; onClose: () =
   const shown = options.filter((o) => filter === 'all' || o.sport === filter);
 
   const add = async (o: Pick<Option, 'sport' | 'subtype' | 'title' | 'notes' | 'distanceM' | 'gymTags'>) => {
-    await addSession({ date: day, sport: o.sport, subtype: o.subtype, title: o.title, notes: o.notes, distanceM: o.distanceM, gymTags: o.gymTags, status: day < today() ? 'done' : 'planned' });
-    onAdded(`${o.title} añadida al ${formatLong(day).split(',')[0].toLowerCase()}`);
+    const s = { date: day, sport: o.sport, subtype: o.subtype, title: o.title, notes: o.notes, distanceM: o.distanceM, gymTags: o.gymTags, status: (day < today() ? 'done' : 'planned') as 'done' | 'planned' };
+    await addSession(s);
+    if (repeat) await repeatWeekly(s, repeat);
+    onAdded(`${o.title} añadida al ${formatLong(day).split(',')[0].toLowerCase()}${repeat ? ` y ${repeat} semanas más` : ''}`);
   };
 
   return (
@@ -145,6 +153,12 @@ function AddSheet({ day, onClose, onAdded }: { day: string | null; onClose: () =
       <div className="chips mt-16">
         {(['all', ...VOLUME_SPORTS] as const).map((f) => (
           <button key={f} className="chip" aria-pressed={filter === f} onClick={() => setFilter(f)}>{f === 'all' ? 'Todo' : SPORTS[f].short}</button>
+        ))}
+      </div>
+      <div className="row mt-16" style={{ gap: 8 }}>
+        <span className="muted" style={{ fontSize: 13, flex: 1 }}>Repetir también</span>
+        {[0, 4, 8, 12].map((n) => (
+          <button key={n} className="chip chip--soft" aria-pressed={repeat === n} onClick={() => setRepeat(n)}>{n ? `${n} sem.` : 'No'}</button>
         ))}
       </div>
       <p className="label" style={{ margin: '18px 0 2px' }}>Recientes y plantillas · un toque</p>
@@ -166,6 +180,35 @@ function AddSheet({ day, onClose, onAdded }: { day: string | null; onClose: () =
         <button className="btn-ghost" style={{ flex: 1 }} onClick={() => nav(`/sesion/nueva?fecha=${day}&deporte=race`)}>Competición</button>
       </div>
       <Link to={`/sesion/nueva?fecha=${day}`} className="btn-primary mt-12">Sesión nueva con detalle…</Link>
+    </Sheet>
+  );
+}
+
+function WeekTemplatesSheet({ open, anchor, onClose, onDone }: { open: boolean; anchor: string; onClose: () => void; onDone: (msg: string) => void }) {
+  const templates = useSetting<WeekTemplate[]>('weekTemplates', []);
+  const [name, setName] = useState('');
+  const { week } = isoWeek(anchor);
+  return (
+    <Sheet open={open} onClose={onClose} label="Plantillas de semana">
+      <span className="num" style={{ fontSize: 20, fontWeight: 600 }}>Plantillas de semana</span>
+      <p className="muted" style={{ fontSize: 13, lineHeight: 1.5, margin: '6px 0 0' }}>Guarda una semana tipo y aplícala a cualquier otra con un toque. Se añade como planificada y no duplica lo que ya haya.</p>
+      <p className="label" style={{ margin: '18px 0 4px' }}>Aplicar a la semana {week}</p>
+      {templates.length === 0 && <p className="empty">Aún no hay plantillas.</p>}
+      {templates.map((tp) => (
+        <div key={tp.name} className="list-row">
+          <span className="stack" style={{ flex: 1, gap: 2 }}>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>{tp.name}</span>
+            <span className="muted" style={{ fontSize: 12 }}>{tp.items.length} sesiones</span>
+          </span>
+          <button className="btn-pill" data-haptic="success" onClick={async () => onDone(`Añadidas ${await applyWeekTemplate(tp, anchor)} sesiones de «${tp.name}»`)}>Aplicar</button>
+          <button className="btn-round" aria-label={`Borrar ${tp.name}`} data-haptic="warning" onClick={() => confirm(`¿Borrar la plantilla «${tp.name}»?`) && deleteWeekTemplate(tp.name)}><IconTrash size={16} /></button>
+        </div>
+      ))}
+      <p className="label" style={{ margin: '20px 0 8px' }}>Guardar la semana {week} como plantilla</p>
+      <div className="row">
+        <input className="field-input" placeholder="Nombre (p. ej. Semana base)" value={name} onChange={(e) => setName(e.target.value)} />
+        <button className="btn-pill" disabled={!name.trim()} data-haptic="success" onClick={async () => { const tp = await saveWeekTemplate(name, anchor); setName(''); onDone(`Plantilla «${tp.name}» guardada (${tp.items.length} sesiones)`); }}>Guardar</button>
+      </div>
     </Sheet>
   );
 }

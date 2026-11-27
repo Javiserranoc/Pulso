@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IconArrowLeft, IconDownload, IconFileSpreadsheet, IconUpload } from '@tabler/icons-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { IconArrowLeft, IconChevronRight, IconDownload, IconFileSpreadsheet, IconUpload } from '@tabler/icons-react';
 import { db, setSetting } from '../db/db';
 import { downloadJSON, exportAll, importAll, isBackup, toCSV } from '../db/backup';
 import { useSetting } from '../db/hooks';
+import { NO_GOALS, type Goals } from '../domain/stats';
+import { SPORTS, VOLUME_SPORTS } from '../domain/sports';
+import { planningReminderICS } from '../lib/ics';
+import type { Sport } from '../domain/types';
 import { loadSampleData } from '../db/seed';
 import { today } from '../domain/dates';
 import { Segmented, useToast } from '../components/ui';
@@ -74,6 +78,30 @@ export default function Settings() {
         <input type="checkbox" data-haptic="none" checked={vibration} onChange={(e) => { setHapticsEnabled(e.target.checked); setVibration(e.target.checked); if (e.target.checked) haptic('success'); }} style={{ width: 22, height: 22, accentColor: 'var(--blue)' }} />
       </label>
 
+      <Link to="/conexiones" className="card card--tight between mt-12" style={{ padding: '14px 16px', color: 'inherit' }}>
+        <span className="stack" style={{ gap: 2 }}>
+          <span style={{ fontSize: 15, fontWeight: 600 }}>Conexiones</span>
+          <span className="muted" style={{ fontSize: 12 }}>Garmin, Strava e importar archivos .fit/.gpx/.tcx</span>
+        </span>
+        <IconChevronRight size={18} color="var(--muted)" />
+      </Link>
+
+      <GoalsEditor />
+
+      <section className="card mt-12">
+        <span className="label">Recordatorio para planificar</span>
+        <p className="muted" style={{ fontSize: 13, lineHeight: 1.5, margin: '8px 0 12px' }}>
+          Añade al calendario del móvil un aviso cada domingo a las 20:00 que abre el plan de la semana.
+        </p>
+        <button className="btn-ghost" style={{ width: '100%' }} onClick={() => {
+          const blob = new Blob([planningReminderICS(`${location.origin}${location.pathname}`)], { type: 'text/calendar' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'pulso-planificar.ics';
+          a.click();
+        }}>Añadir al calendario</button>
+      </section>
+
       <section className="card mt-20">
         <span className="label">Tus datos</span>
         <p className="muted" style={{ fontSize: 13, lineHeight: 1.5, margin: '8px 0 12px' }}>
@@ -106,5 +134,32 @@ export default function Settings() {
       <p className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 24 }}>Pulso v{__APP_VERSION__}</p>
       {toast.node}
     </main>
+  );
+}
+
+function GoalsEditor() {
+  const goals = useSetting<Goals>('goals', NO_GOALS);
+  const [period, setPeriod] = useState<'month' | 'year'>('month');
+  const set = (sp: Sport, text: string) => {
+    const v = Number(text.replace(/\./g, '').replace(',', '.'));
+    const next: Goals = { month: { ...goals.month }, year: { ...goals.year } };
+    if (!text.trim() || !Number.isFinite(v) || v <= 0) delete next[period][sp];
+    else next[period][sp] = v;
+    setSetting('goals', next);
+  };
+  return (
+    <section className="card mt-12">
+      <span className="label">Objetivos</span>
+      <p className="muted" style={{ fontSize: 13, lineHeight: 1.5, margin: '8px 0 10px' }}>Aparecen con su barra de progreso en Resumen → Mes y Año. Deja vacío lo que no quieras medir.</p>
+      <Segmented<'month' | 'year'> value={period} onChange={setPeriod} options={[{ id: 'month', label: 'Mensual' }, { id: 'year', label: 'Anual' }]} />
+      <div className="grid-2 mt-12">
+        {VOLUME_SPORTS.map((sp) => (
+          <label key={`${period}-${sp}-${goals[period][sp] ?? ""}`} className="stack" style={{ gap: 6 }}>
+            <span className="muted" style={{ fontSize: 12 }}>{SPORTS[sp].name} ({sp === 'gym' ? 'sesiones' : SPORTS[sp].unit})</span>
+            <input className="field-input" inputMode="decimal" placeholder="—" defaultValue={goals[period][sp] ?? ''} onBlur={(e) => set(sp, e.target.value)} />
+          </label>
+        ))}
+      </div>
+    </section>
   );
 }

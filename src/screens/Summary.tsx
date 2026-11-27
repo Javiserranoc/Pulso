@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import { useAllSessions } from '../db/hooks';
-import { addDays, formatWeekRange, isoWeek, MONTHS, parseISODate, toISODate, today } from '../domain/dates';
+import { useAllSessions, useSetting } from '../db/hooks';
+import { addDays, formatWeekRange, formatShort, isoWeek, MONTHS, parseISODate, toISODate, today } from '../domain/dates';
 import { fmtNumber } from '../domain/format';
 import { SPORTS, VOLUME_SPORTS } from '../domain/sports';
-import { bestMonth, inRange, isDone, monthRange, seriesByDay, seriesByMonth, seriesByWeek, totalsBySport, weekProgress, yearOverYear, yearRange, type SportTotal } from '../domain/stats';
+import { bestMonth, bestWeek, NO_GOALS, type Goals, inRange, isDone, monthRange, seriesByDay, seriesByMonth, seriesByWeek, totalsBySport, weekProgress, yearOverYear, yearRange, type SportTotal } from '../domain/stats';
 import type { Session, Sport } from '../domain/types';
 import { BarChart, Carousel, Segmented, SportTile, type Bar } from '../components/ui';
 
@@ -116,7 +116,19 @@ function WeekView({ all, anchor, t, move }: { all: Session[]; anchor: string; t:
   );
 }
 
+function GoalBar({ value, goal, sport }: { value: number; goal?: number; sport: Sport }) {
+  if (!goal) return null;
+  const pct = Math.min(100, (value / goal) * 100);
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div className="bar"><i style={{ width: `${pct}%` }} /></div>
+      <span className="muted" style={{ fontSize: 11 }}>Objetivo {fmtV(sport, goal)} {unitOf(sport)} · {Math.round((value / goal) * 100)} %</span>
+    </div>
+  );
+}
+
 function MonthView({ all, year, month, t, move }: { all: Session[]; year: number; month: number; t: string; move: (n: number) => void }) {
+  const goals = useSetting<Goals>('goals', NO_GOALS);
   const [from, to] = monthRange(year, month);
   const totals = totalsBySport(inRange(all, from, to).filter(isDone));
   return (
@@ -137,6 +149,7 @@ function MonthView({ all, year, month, t, move }: { all: Session[]; year: number
             <span className="muted" style={{ fontSize: 12 }}>{SPORTS[sp].name}</span>
             <div className="num" style={{ fontSize: 22, fontWeight: 600, marginTop: 4 }}>{fmtV(sp, totals[sp].value)} <small className="muted" style={{ fontSize: 12 }}>{unitOf(sp)}</small></div>
             <span className="muted" style={{ fontSize: 11 }}>{splitText(totals[sp])}</span>
+            <GoalBar value={totals[sp].value} goal={goals.month[sp]} sport={sp} />
           </div>
         ))}
       </div>
@@ -146,6 +159,8 @@ function MonthView({ all, year, month, t, move }: { all: Session[]; year: number
 
 function YearView({ all, year, t, move }: { all: Session[]; year: number; t: string; move: (n: number) => void }) {
   const [sport, setSport] = useState<Sport>('swim');
+  const goals = useSetting<Goals>('goals', NO_GOALS);
+  const bw = bestWeek(all, year, sport);
   const [from, to] = yearRange(year);
   const tot = totalsBySport(inRange(all, from, to).filter(isDone))[sport];
   const yoy = yearOverYear(all, year, sport, year === parseISODate(t).getFullYear() ? t : `${year}-12-31`);
@@ -173,6 +188,7 @@ function YearView({ all, year, t, move }: { all: Session[]; year: number; t: str
         <div className="num" style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.1, marginTop: 6 }}>
           {fmtV(sport, tot.value)} <small className="muted" style={{ fontSize: 16 }}>{unitOf(sport)}</small>
         </div>
+        <GoalBar value={tot.value} goal={goals.year[sport]} sport={sport} />
         {subs.length > 0 && (
           <>
             <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', marginTop: 12, background: 'var(--track)' }}>
@@ -197,9 +213,16 @@ function YearView({ all, year, t, move }: { all: Session[]; year: number; t: str
           </div>
         </div>
         <div className="card card--tight">
-          <span className="muted" style={{ fontSize: 12 }}>Sesiones</span>
-          <div className="num" style={{ fontSize: 18, fontWeight: 600, marginTop: 3 }}>{tot.count}</div>
+          <span className="muted" style={{ fontSize: 12 }}>Mejor semana</span>
+          <div className="num" style={{ fontSize: 18, fontWeight: 600, marginTop: 3 }}>
+            {bw ? `S${isoWeek(bw.monday).week} · ${fmtV(sport, bw.value)} ${unitOf(sport)}` : '—'}
+          </div>
+          {bw && <span className="muted" style={{ fontSize: 11 }}>desde el {formatShort(bw.monday).toLowerCase()}</span>}
         </div>
+      </div>
+      <div className="card card--tight mt-12 between">
+        <span className="muted" style={{ fontSize: 13 }}>Sesiones de {SPORTS[sport].name.toLowerCase()} en {year}</span>
+        <span className="num" style={{ fontSize: 18, fontWeight: 600 }}>{tot.count}</span>
       </div>
     </>
   );

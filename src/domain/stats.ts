@@ -142,3 +142,20 @@ export function yearOverYear(all: Session[], year: number, sport: Sport, todayIS
   return (now - prev) / prev;
 }
 
+
+/** Mejor semana (lunes a domingo) de un año para un deporte; la semana pertenece al año de su lunes. */
+export function bestWeek(all: Session[], year: number, sport: Sport): { monday: string; value: number } | null {
+  const done = all.filter((s) => isDone(s) && s.sport === sport && s.date >= `${year - 1}-12-25` && s.date <= `${year + 1}-01-07`);
+  const byWeek = new Map<string, number>();
+  for (const s of done) {
+    const mon = weekDays(s.date)[0];
+    if (!mon.startsWith(String(year))) continue;
+    byWeek.set(mon, (byWeek.get(mon) ?? 0) + volumeOf(s));
+  }
+  let best: { monday: string; value: number } | null = null;
+  for (const [monday, value] of byWeek) if (value > 0 && (!best || value > best.value)) best = { monday, value };
+  return best;
+}
+
+export type Goals = { month: Partial<Record<Sport, number>>; year: Partial<Record<Sport, number>> };
+export const NO_GOALS: Goals = { month: {}, year: {} };

@@ -8,12 +8,13 @@ Primera versión (v0.1): MVP navegable, datos guardados solo en el dispositivo.
 
 | Pantalla | Qué permite |
 | --- | --- |
-| **Inicio** | Día y semana actual, % del plan hecho, sesiones del día (marcar como hecha con un toque), totales de la semana y botón para registrar. |
-| **Resumen** | Semana (hecho frente a plan + gráficas por día que se deslizan), mes (por semanas) y año (por meses, reparto por subcategoría, mejor mes y comparación con el año anterior). |
+| **Inicio** | Cuenta atrás a la próxima competición, día y semana actual, % del plan hecho, sesiones del día (marcar como hecha con un toque), totales de la semana y botón para registrar. |
+| **Resumen** | Semana (hecho frente a plan + gráficas por día que se deslizan), mes (por semanas, con objetivos) y año (por meses, reparto por subcategoría, objetivo anual, mejor mes, mejor semana y comparación con el año anterior). |
 | **Calendario** | Cualquier año y mes, con número de semana ISO automático, puntos por sesión y competiciones marcadas. |
-| **Plan** | Semana de lunes a domingo; copiar la semana anterior; añadir desde recientes y plantillas con un toque; objetivo semanal calculado. |
+| **Plan** | Semana de lunes a domingo; copiar la semana anterior; plantillas de semana completa; añadir desde recientes y plantillas con un toque y repetir 4, 8 o 12 semanas; objetivo semanal calculado. |
 | **Registrar / editar sesión** | Formulario que cambia según el deporte. Estructura en texto libre con atajos (plantillas, recientes, distancias rápidas, botones «+ Series», «+ ×», «+ rec.»…), tiempo con ritmo calculado e intensidad Z1–Z5 opcional. Repetir en 7 días, guardar como plantilla, eliminar. |
-| **Ajustes** | Nombre, fondo (cinta, puntos o ninguno), vibración, exportar/importar copia (.json), exportar a Excel (.csv), cargar el ejemplo de noviembre de 2026. |
+| **Conexiones** | Garmin (API personal), Strava (OAuth) e importar archivos .fit / .gpx / .tcx / .zip. Las actividades completan solas las sesiones planificadas (distancia, tiempo, hecha) sin duplicar, aunque uses Garmin y Strava a la vez. |
+| **Ajustes** | Nombre, objetivos mensuales y anuales, recordatorio semanal en el calendario (.ics), fondo (cinta, puntos o ninguno), vibración, exportar/importar copia (.json), exportar a Excel (.csv), cargar el ejemplo de noviembre de 2026. |
 
 ## Puesta en marcha
 
@@ -58,6 +59,16 @@ Ambos van a ~30 fps con resolución limitada a 2×, se pausan en segundo plano y
 - Entrada escalonada de cada pantalla, anillo y barras que crecen, botones que se hunden al pulsar, ✓ con rebote al marcar una sesión como hecha. Todo se desactiva si el sistema tiene «Reducir movimiento».
 - Vibración (`src/lib/haptics.ts`): toque ligero en cualquier botón y doble toque al guardar o completar. En Android usa `navigator.vibrate`; en iPhone (Safari no lo soporta) usa el toque háptico del interruptor nativo de iOS 18+. Se desactiva en Ajustes.
 
+## Garmin y Strava
+
+Todo se hace desde el móvil; no hay servidor de Pulso. Las claves se guardan solo en el dispositivo y **no se incluyen en las copias exportadas**.
+
+- **Garmin Connect · API personal** (oficial, solo lectura): en Garmin Connect **web** → Ajustes → *Personal API Key* → crear clave y pegarla en *Ajustes → Conexiones*. La app pide un token de 24 h con la clave y lista las actividades del periodo elegido.
+- **Strava**: crea tu propia aplicación en `strava.com/settings/api` (en *Authorization Callback Domain* pon el dominio donde está publicada la app), pega Client ID y Client Secret y pulsa *Autorizar*. Desde junio de 2026 Strava exige suscripción para usar su API en el nivel estándar. En iPhone, si la vuelta de Strava se abre en Safari en vez de en la app instalada, la página muestra el código para copiarlo y pegarlo en la app.
+- **Archivos**: .fit, .gpx, .tcx o el .zip de *Exportar original* de Garmin Connect; sin cuentas.
+- **Emparejado**: cada actividad completa la sesión planificada del mismo día y deporte (o una apuntada a mano con la misma distancia o tiempo), conservando el título y la estructura; si no hay ninguna, se crea. Nada se duplica al sincronizar varias veces ni entre fuentes.
+- **Si el navegador bloquea la conexión (CORS)**: `proxy/` tiene un intermediario mínimo para Cloudflare Workers (gratis). Ver `proxy/README.md`.
+
 ## Datos
 
 - Se guardan en el propio dispositivo con **IndexedDB** (vía Dexie). No hay servidor ni cuentas.
@@ -72,9 +83,11 @@ Ambos van a ~30 fps con resolución limitada a 2×, se pausan en segundo plano y
 src/
   domain/      tipos, deportes (unidades, subcategorías, plantillas), fechas ISO, formatos, acumulados
   db/          base de datos local, copias de seguridad, datos de ejemplo, hooks de React
+  sync/        Garmin, Strava, archivos .fit/.gpx/.tcx y emparejado con el plan
   components/  iconos de deporte, anillo, barras, carrusel, hoja inferior…
   screens/     Inicio, Resumen, Calendario, Plan, Formulario de sesión, Ajustes
   styles/      tokens del sistema visual (oscuro, plano, solo azul)
+proxy/                  intermediario opcional para Cloudflare Workers
 scripts/make-icons.py   genera los iconos de la PWA (latido blanco sobre azul)
 ```
 
@@ -82,8 +95,6 @@ Stack: React 19 + TypeScript + Vite, `vite-plugin-pwa` (Workbox), Dexie, React R
 
 ## Próximos pasos
 
-Según el alcance definido en el diseño:
-
-- **Fase 1 (pendiente):** importar el Excel actual (jul–nov 2026).
-- **Fase 2:** competiciones con cuenta atrás, objetivos mensuales y anuales, récords, plantillas de semana completa, aviso para planificar.
-- **Fase 3:** leer actividades de Apple Salud / Garmin, app de Garmin Connect IQ, sincronización entre dispositivos (necesitaría un backend, p. ej. Supabase).
+- Importar el Excel actual (jul–nov 2026): pendiente del archivo.
+- App de Garmin Connect IQ para ver el plan en el reloj (proyecto aparte, en Monkey C).
+- Sincronización entre dispositivos (necesitaría un backend, p. ej. Supabase).

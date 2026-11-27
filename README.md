@@ -38,7 +38,7 @@ Requiere Node 20 o superior.
 El flujo `.github/workflows/deploy.yml` pasa los tests y compila en cada push. Para publicar además en GitHub Pages:
 
 1. *Settings → Pages → Source: GitHub Actions*.
-2. *Settings → Secrets and variables → Actions → Variables*: crea `DEPLOY_PAGES` con valor `true`.
+2. Crea la variable `DEPLOY_PAGES` con valor `true`, en *Settings → Secrets and variables → Actions → Variables* o en el entorno `github-pages` (*Settings → Environments*).
 
 Para no gastar el límite de Actions: no usa caché de npm, el artefacto de Pages caduca en 1 día y un último paso borra las cachés y los artefactos de cada ejecución. En repos privados, GitHub Pages necesita un plan de pago (Pro, Team o Enterprise); si no, se puede usar Netlify, Vercel o Cloudflare Pages con `npm run build` y la carpeta `dist`.
 

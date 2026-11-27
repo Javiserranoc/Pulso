@@ -30,15 +30,16 @@ jobs:
       - run: npm test
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'pull_request' && vars.DEPLOY_PAGES == 'true'
+        if: github.event_name != 'pull_request'
         with:
           path: dist
           retention-days: 1
 
-  # Solo despliega si existe la variable del repo DEPLOY_PAGES=true
-  # (Settings → Secrets and variables → Actions → Variables) y Pages está activado con «GitHub Actions».
+  # Solo publica si la variable DEPLOY_PAGES=true existe, en el repo o en el entorno «github-pages»,
+  # y Pages está activado con «GitHub Actions». Se comprueba en el paso porque las variables
+  # del entorno solo se ven dentro del job que lo usa.
   deploy:
-    if: github.event_name != 'pull_request' && vars.DEPLOY_PAGES == 'true'
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -47,7 +48,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
+        if: vars.DEPLOY_PAGES == 'true'
         uses: actions/deploy-pages@v4
+      - if: vars.DEPLOY_PAGES != 'true'
+        run: echo "::notice::Despliegue omitido: crea la variable DEPLOY_PAGES=true para publicar en GitHub Pages." 
 
   # Limpieza: borra cachés del repo y el artefacto de esta ejecución para no gastar almacenamiento.
   cleanup:

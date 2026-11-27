@@ -6,14 +6,15 @@ import { downloadJSON, exportAll, importAll, isBackup, toCSV } from '../db/backu
 import { useSetting } from '../db/hooks';
 import { loadSampleData } from '../db/seed';
 import { today } from '../domain/dates';
-import { useToast } from '../components/ui';
+import { Segmented, useToast } from '../components/ui';
 import { haptic, hapticsEnabled, setHapticsEnabled } from '../lib/haptics';
 
 export default function Settings() {
   const nav = useNavigate();
   const toast = useToast();
   const name = useSetting<string>('name', '');
-  const animated = useSetting<boolean>('animatedBackground', true);
+  const legacy = useSetting<boolean>('animatedBackground', true);
+  const background = useSetting<'ribbon' | 'dots' | 'off'>('background', legacy ? 'ribbon' : 'off');
   const [draftName, setDraftName] = useState<string | null>(null);
   const [vibration, setVibration] = useState(hapticsEnabled());
   const [persisted, setPersisted] = useState<boolean | null>(null);
@@ -58,13 +59,12 @@ export default function Settings() {
         <input className="field-input" placeholder="Para el saludo del inicio" value={draftName ?? name} onChange={(e) => setDraftName(e.target.value)} onBlur={() => draftName != null && setSetting('name', draftName.trim())} />
       </label>
 
-      <label className="card card--tight between mt-12" style={{ padding: '14px 16px' }}>
-        <span className="stack" style={{ gap: 2 }}>
-          <span style={{ fontSize: 15, fontWeight: 600 }}>Fondo animado</span>
-          <span className="muted" style={{ fontSize: 12 }}>Puntos en movimiento detrás de la app</span>
-        </span>
-        <input type="checkbox" checked={animated} onChange={(e) => setSetting('animatedBackground', e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--blue)' }} />
-      </label>
+      <div className="card card--tight mt-12" style={{ padding: '14px 16px' }}>
+        <span style={{ fontSize: 15, fontWeight: 600 }}>Fondo</span>
+        <div className="mt-8">
+          <Segmented<'ribbon' | 'dots' | 'off'> value={background} onChange={(v) => setSetting('background', v)} options={[{ id: 'ribbon', label: 'Cinta' }, { id: 'dots', label: 'Puntos' }, { id: 'off', label: 'Ninguno' }]} />
+        </div>
+      </div>
 
       <label className="card card--tight between mt-12" style={{ padding: '14px 16px' }}>
         <span className="stack" style={{ gap: 2 }}>

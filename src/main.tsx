@@ -15,7 +15,9 @@ import Calendar from './screens/Calendar';
 import Plan from './screens/Plan';
 import SessionForm from './screens/SessionForm';
 import Settings from './screens/Settings';
+import { useState } from 'react';
 import DotsBackground from './components/DotsBackground';
+import RibbonBackground from './components/RibbonBackground';
 import Splash from './components/Splash';
 import { useSetting } from './db/hooks';
 import { installGlobalHaptics } from './lib/haptics';
@@ -64,10 +66,14 @@ installGlobalHaptics();
 navigator.storage?.persist?.().catch(() => undefined);
 
 function Root() {
-  const animated = useSetting<boolean>('animatedBackground', true);
+  const legacy = useSetting<boolean>('animatedBackground', true);
+  const background = useSetting<'ribbon' | 'dots' | 'off'>('background', legacy ? 'ribbon' : 'off');
+  const [noWebGL, setNoWebGL] = useState(false);
+  const kind = background === 'ribbon' && noWebGL ? 'dots' : background;
   return (
     <>
-      <DotsBackground enabled={animated} />
+      {kind === 'ribbon' && <RibbonBackground onUnsupported={() => setNoWebGL(true)} />}
+      <DotsBackground enabled={kind === 'dots'} />
       <RouterProvider router={router} />
       <Splash />
     </>

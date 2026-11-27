@@ -13,7 +13,7 @@ Primera versión (v0.1): MVP navegable, datos guardados solo en el dispositivo.
 | **Calendario** | Cualquier año y mes, con número de semana ISO automático, puntos por sesión y competiciones marcadas. |
 | **Plan** | Semana de lunes a domingo; copiar la semana anterior; añadir desde recientes y plantillas con un toque; objetivo semanal calculado. |
 | **Registrar / editar sesión** | Formulario que cambia según el deporte. Estructura en texto libre con atajos (plantillas, recientes, distancias rápidas, botones «+ Series», «+ ×», «+ rec.»…), tiempo con ritmo calculado e intensidad Z1–Z5 opcional. Repetir en 7 días, guardar como plantilla, eliminar. |
-| **Ajustes** | Nombre, fondo animado y vibración on/off, exportar/importar copia (.json), exportar a Excel (.csv), cargar el ejemplo de noviembre de 2026. |
+| **Ajustes** | Nombre, fondo (cinta, puntos o ninguno), vibración, exportar/importar copia (.json), exportar a Excel (.csv), cargar el ejemplo de noviembre de 2026. |
 
 ## Puesta en marcha
 
@@ -44,7 +44,13 @@ Para no gastar el límite de Actions: no usa caché de npm, el artefacto de Page
 
 ## Fondo animado
 
-Puntos en movimiento unidos por líneas finas (`src/components/DotsBackground.tsx`). Es un único `<canvas>` fijo detrás de la interfaz, sin re-renders de React: va a ~30 fps, limita la resolución a 2×, ajusta el número de puntos al tamaño de pantalla, se pausa en segundo plano y respeta «Reducir movimiento» de iOS. Se puede apagar en Ajustes.
+Se elige en Ajustes → Fondo:
+
+- **Cinta** (por defecto, `src/components/RibbonBackground.tsx`): cintas de luz resueltas en una trama de puntos, en WebGL. Adaptado de *Ribbon Field* de [ThreeUI Community](https://github.com/MengTo/threeui) (MIT) con la paleta azul de Pulso, encuadre vertical e intensidad reducida. Si el dispositivo no tiene WebGL, se usa «Puntos».
+- **Puntos** (`src/components/DotsBackground.tsx`): puntos en movimiento unidos por líneas finas, en Canvas 2D.
+- **Ninguno**.
+
+Ambos van a ~30 fps con resolución limitada a 2×, se pausan en segundo plano y se quedan quietos con «Reducir movimiento». Licencias de terceros en `THIRD_PARTY_NOTICES.md`.
 
 ## Animaciones y vibración
 

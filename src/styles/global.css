@@ -43,7 +43,7 @@ a { color: var(--blue-text); text-decoration: none; }
 .label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
 /* Estructura de pantalla */
-.screen { max-width: 480px; margin: 0 auto; padding: calc(var(--safe-top) + 20px) 20px calc(var(--safe-bottom) + 120px); }
+.screen { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: calc(var(--safe-top) + 20px) 20px calc(var(--safe-bottom) + 120px); }
 .screen--form { padding-bottom: calc(var(--safe-bottom) + 110px); }
 .title { font-family: var(--font-display); font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
 .subtitle { font-size: 13px; color: var(--muted); margin: 2px 0 0; }

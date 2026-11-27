@@ -15,6 +15,8 @@ import Calendar from './screens/Calendar';
 import Plan from './screens/Plan';
 import SessionForm from './screens/SessionForm';
 import Settings from './screens/Settings';
+import DotsBackground from './components/DotsBackground';
+import { useSetting } from './db/hooks';
 
 function TabsLayout() {
   const tabs = [
@@ -57,8 +59,18 @@ const router = createHashRouter([
 // Pide al navegador que no borre los datos locales si le falta espacio.
 navigator.storage?.persist?.().catch(() => undefined);
 
+function Root() {
+  const animated = useSetting<boolean>('animatedBackground', true);
+  return (
+    <>
+      <DotsBackground enabled={animated} />
+      <RouterProvider router={router} />
+    </>
+  );
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <Root />
   </StrictMode>
 );

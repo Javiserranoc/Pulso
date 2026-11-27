@@ -13,7 +13,7 @@ Primera versión (v0.1): MVP navegable, datos guardados solo en el dispositivo.
 | **Calendario** | Cualquier año y mes, con número de semana ISO automático, puntos por sesión y competiciones marcadas. |
 | **Plan** | Semana de lunes a domingo; copiar la semana anterior; añadir desde recientes y plantillas con un toque; objetivo semanal calculado. |
 | **Registrar / editar sesión** | Formulario que cambia según el deporte. Estructura en texto libre con atajos (plantillas, recientes, distancias rápidas, botones «+ Series», «+ ×», «+ rec.»…), tiempo con ritmo calculado e intensidad Z1–Z5 opcional. Repetir en 7 días, guardar como plantilla, eliminar. |
-| **Ajustes** | Nombre, exportar/importar copia (.json), exportar a Excel (.csv), cargar el ejemplo de noviembre de 2026. |
+| **Ajustes** | Nombre, fondo animado on/off, exportar/importar copia (.json), exportar a Excel (.csv), cargar el ejemplo de noviembre de 2026. |
 
 ## Puesta en marcha
 
@@ -37,6 +37,10 @@ Requiere Node 20 o superior.
 
 El flujo `.github/workflows/deploy.yml` pasa los tests y publica `dist/` en GitHub Pages en cada push a `main`.
 Para activarlo: *Settings → Pages → Source: GitHub Actions*. En repos privados, GitHub Pages necesita un plan de pago (Pro, Team o Enterprise); si no, se puede usar Netlify, Vercel o Cloudflare Pages con `npm run build` y la carpeta `dist`.
+
+## Fondo animado
+
+Puntos en movimiento unidos por líneas finas (`src/components/DotsBackground.tsx`). Es un único `<canvas>` fijo detrás de la interfaz, sin re-renders de React: va a ~30 fps, limita la resolución a 2×, ajusta el número de puntos al tamaño de pantalla, se pausa en segundo plano y respeta «Reducir movimiento» de iOS. Se puede apagar en Ajustes.
 
 ## Datos
 

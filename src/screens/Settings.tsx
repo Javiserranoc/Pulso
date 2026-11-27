@@ -12,6 +12,7 @@ export default function Settings() {
   const nav = useNavigate();
   const toast = useToast();
   const name = useSetting<string>('name', '');
+  const animated = useSetting<boolean>('animatedBackground', true);
   const [draftName, setDraftName] = useState<string | null>(null);
   const [persisted, setPersisted] = useState<boolean | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,6 +54,14 @@ export default function Settings() {
       <label className="stack mt-20" style={{ gap: 8 }}>
         <span className="label">Tu nombre</span>
         <input className="field-input" placeholder="Para el saludo del inicio" value={draftName ?? name} onChange={(e) => setDraftName(e.target.value)} onBlur={() => draftName != null && setSetting('name', draftName.trim())} />
+      </label>
+
+      <label className="card card--tight between mt-12" style={{ padding: '14px 16px' }}>
+        <span className="stack" style={{ gap: 2 }}>
+          <span style={{ fontSize: 15, fontWeight: 600 }}>Fondo animado</span>
+          <span className="muted" style={{ fontSize: 12 }}>Puntos en movimiento detrás de la app</span>
+        </span>
+        <input type="checkbox" checked={animated} onChange={(e) => setSetting('animatedBackground', e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--blue)' }} />
       </label>
 
       <section className="card mt-20">

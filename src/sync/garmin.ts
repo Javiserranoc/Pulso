@@ -7,6 +7,7 @@ import { getSetting, setSetting } from '../db/db';
 import { addDays, today } from '../domain/dates';
 import { mapGarminType, type ExternalActivity } from './activities';
 import { apiFetch, expectOk, SyncError } from './net';
+import { toRoute } from '../domain/route';
 
 const BASE = 'https://personal.connectapi.garmin.com';
 
@@ -61,12 +62,14 @@ interface GarminActivity {
 export async function fetchGarmin(days = 30): Promise<{ activities: ExternalActivity[]; ignored: number }> {
   const cfg = await getGarmin();
   if (!cfg?.apiKey) throw new SyncError('Falta la clave de Garmin.', 'config');
-  const bearer = await token(cfg);
   const params = new URLSearchParams({ start: '0', limit: '100', startDate: addDays(today(), -days), endDate: today() });
-  const res = await expectOk(
-    await apiFetch(`${BASE}/activitylist-service/activities/search/activities?${params}`, { headers: { Authorization: `Bearer ${bearer}`, Accept: 'application/json' } }),
-    'Garmin'
-  );
+  const request = (bearer: string) => apiFetch(`${BASE}/activitylist-service/activities/search/activities?${params}`, { headers: { Authorization: `Bearer ${bearer}`, Accept: 'application/json' } });
+  let res = await request(await token(cfg));
+  if (res.status === 401 && cfg.token) {
+    // El token guardado ya no vale (clave renovada o revocada): se pide otro una vez.
+    res = await request(await token({ ...cfg, token: undefined, tokenExp: undefined }));
+  }
+  res = await expectOk(res, 'Garmin');
   const body = await res.json();
   const list: GarminActivity[] = Array.isArray(body) ? body : body.activityList ?? body.activities ?? [];
   const activities: ExternalActivity[] = [];
@@ -90,4 +93,18 @@ export async function fetchGarmin(days = 30): Promise<{ activities: ExternalActi
   }
   await saveGarmin({ ...((await getGarmin()) ?? cfg), lastSync: new Date().toISOString() });
   return { activities, ignored };
+}
+
+/** Descarga el .fit original de una actividad de Garmin y devuelve su recorrido, si tiene GPS. */
+export async function fetchGarminRoute(activityId: string): Promise<string | undefined> {
+  const cfg = await getGarmin();
+  if (!cfg?.apiKey) throw new SyncError('Falta la clave de Garmin.', 'config');
+  const res = await expectOk(await apiFetch(`${BASE}/download-service/files/activity/${encodeURIComponent(activityId)}`, { headers: { Authorization: `Bearer ${await token(cfg)}` } }), 'Garmin');
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const { unzipSync } = await import('fflate');
+  const { readFit } = await import('./files');
+  const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
+  const fit = isZip ? Object.entries(unzipSync(bytes)).find(([n]) => /\.fit$/i.test(n))?.[1] : bytes;
+  if (!fit) return undefined;
+  return toRoute((await readFit(fit)).points);
 }

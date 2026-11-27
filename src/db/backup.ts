@@ -36,7 +36,10 @@ export function isBackup(x: unknown): x is Backup {
 export async function importAll(backup: Backup, mode: 'replace' | 'merge', database: PulsoDB = db): Promise<number> {
   return database.transaction('rw', database.sessions, database.templates, database.settings, async () => {
     if (mode === 'replace') {
+      // Las conexiones (claves) no van en la copia: se conservan las de este dispositivo.
+      const keep = (await database.settings.toArray()).filter((s) => SECRET_KEYS.includes(s.key));
       await Promise.all([database.sessions.clear(), database.templates.clear(), database.settings.clear()]);
+      await database.settings.bulkPut(keep);
       await database.sessions.bulkAdd(backup.sessions.map(({ id: _id, ...s }) => s));
       await database.templates.bulkAdd(backup.templates.map(({ id: _id, ...t }) => t));
       await database.settings.bulkPut(backup.settings ?? []);

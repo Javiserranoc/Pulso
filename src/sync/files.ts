@@ -5,11 +5,22 @@
 import { unzipSync } from 'fflate';
 import { toISODate } from '../domain/dates';
 import { mapFitSport, mapLooseSport, type ExternalActivity } from './activities';
+import { toRoute, type LatLng } from '../domain/route';
 
 export interface FileParseResult {
   activities: ExternalActivity[];
   ignored: number;
   errors: string[];
+}
+
+/** Lee un .fit y devuelve también sus puntos GPS (para el recorrido de Garmin). */
+export async function readFit(bytes: Uint8Array): Promise<{ sessions: FitSession[]; points: LatLng[] }> {
+  const { default: FitParser } = await import('fit-file-parser');
+  const parser = new FitParser({ force: true, lengthUnit: 'm', mode: 'list' });
+  const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const data = (await parser.parseAsync(ab)) as unknown as { sessions?: FitSession[]; records?: { position_lat?: number; position_long?: number }[] };
+  const points: LatLng[] = (data.records ?? []).filter((r) => typeof r.position_lat === 'number' && typeof r.position_long === 'number').map((r) => [r.position_lat!, r.position_long!]);
+  return { sessions: data.sessions ?? [], points };
 }
 
 export async function parseActivityFiles(files: File[]): Promise<FileParseResult> {
@@ -42,11 +53,8 @@ async function parseBytes(name: string, bytes: Uint8Array, out: FileParseResult)
 }
 
 async function parseFit(name: string, bytes: Uint8Array, out: FileParseResult) {
-  const { default: FitParser } = await import('fit-file-parser');
-  const parser = new FitParser({ force: true, lengthUnit: 'm', mode: 'list' });
-  const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-  const data = (await parser.parseAsync(ab)) as unknown as { sessions?: FitSession[] };
-  const sessions = data.sessions ?? [];
+  const { sessions, points } = await readFit(bytes);
+  const route = sessions.length === 1 ? toRoute(points) : undefined;
   if (!sessions.length) throw new Error('el archivo no tiene sesiones');
   for (const s of sessions) {
     const start = s.start_time ? new Date(s.start_time) : undefined;
@@ -62,7 +70,8 @@ async function parseFit(name: string, bytes: Uint8Array, out: FileParseResult) {
       ...mapped,
       title: titleFromName(name, mapped.sport),
       distanceM: num(s.total_distance),
-      durationS: num(s.total_timer_time ?? s.total_elapsed_time)
+      durationS: num(s.total_timer_time ?? s.total_elapsed_time),
+      route
     });
   }
 }
@@ -104,7 +113,8 @@ function parseGpx(name: string, text: string, out: FileParseResult) {
     ...mapped,
     title: title || titleFromName(name, mapped.sport),
     distanceM: dist ? Math.round(dist) : undefined,
-    durationS: Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000)) || undefined
+    durationS: Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000)) || undefined,
+    route: toRoute(pts.map((p) => [p.lat, p.lon] as LatLng))
   });
 }
 
@@ -120,6 +130,10 @@ function parseTcx(name: string, text: string, out: FileParseResult) {
     }
     let dist = 0;
     let time = 0;
+    const points: LatLng[] = Array.from(act.getElementsByTagName('Position')).map((p) => [
+      Number(p.getElementsByTagName('LatitudeDegrees')[0]?.textContent),
+      Number(p.getElementsByTagName('LongitudeDegrees')[0]?.textContent)
+    ]);
     for (const lap of Array.from(act.getElementsByTagName('Lap'))) {
       time += Number(lap.getElementsByTagName('TotalTimeSeconds')[0]?.textContent ?? 0);
       dist += Number(lap.getElementsByTagName('DistanceMeters')[0]?.textContent ?? 0);
@@ -132,7 +146,8 @@ function parseTcx(name: string, text: string, out: FileParseResult) {
       ...mapped,
       title: titleFromName(name, mapped.sport),
       distanceM: dist ? Math.round(dist) : undefined,
-      durationS: time ? Math.round(time) : undefined
+      durationS: time ? Math.round(time) : undefined,
+      route: toRoute(points)
     });
   }
 }

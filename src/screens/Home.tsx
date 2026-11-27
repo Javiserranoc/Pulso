@@ -11,6 +11,7 @@ import { SPORTS, subtypeName } from '../domain/sports';
 import { weekProgress } from '../domain/stats';
 import type { Session } from '../domain/types';
 import { Ring, SportTile, useToast } from '../components/ui';
+import { MiniRoute } from '../components/RouteMap';
 import { hasConnections, syncAll } from '../sync';
 
 export default function Home() {
@@ -200,7 +201,11 @@ function DayRow({ s, onOpen }: { s: Session; onOpen: () => void }) {
     <div style={{ borderTop: '1px solid var(--line)', marginTop: 12, paddingTop: 12 }}>
       <div className="row" style={{ gap: 12 }}>
         <button onClick={onOpen} className="row" style={{ flex: 1, gap: 12, border: 'none', background: 'none', padding: 0, textAlign: 'left', minWidth: 0 }}>
-          <SportTile sport={s.sport} subtype={s.subtype} />
+          {s.route ? (
+            <span className="tile" style={{ width: 42, height: 42, borderRadius: 13 }}><MiniRoute route={s.route} width={38} height={38} /></span>
+          ) : (
+            <SportTile sport={s.sport} subtype={s.subtype} />
+          )}
           <span className="stack" style={{ gap: 2, minWidth: 0 }}>
             <span style={{ fontSize: 16, fontWeight: 600 }}>{s.title || SPORTS[s.sport].name}</span>
             <span className="muted" style={{ fontSize: 12 }}>

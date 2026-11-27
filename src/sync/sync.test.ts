@@ -82,6 +82,25 @@ describe('importar en la base de datos', () => {
     const run = await db.sessions.where('date').equals('2026-11-28').first();
     expect(run).toMatchObject({ title: '10 km Z2', notes: 'suave', status: 'done', distanceM: 10120 });
   });
+  it('una actividad importada y borrada no vuelve al sincronizar', async () => {
+    const db = new PulsoDB('sync-deleted');
+    await db.open();
+    const acts = [A({ source: 'strava', date: '2026-11-20', sport: 'run', id: 'w1', distanceM: 3000 })];
+    await importActivities(acts, 0, db);
+    const s = await db.sessions.where('externalId').equals('strava:w1').first();
+    const { deleteSession } = await import('../db/db');
+    await deleteSession(s!.id!, db);
+    expect(await importActivities(acts, 0, db)).toMatchObject({ created: 0, skipped: 1 });
+  });
+  it('importar una copia reemplazando conserva las conexiones', async () => {
+    const db = new PulsoDB('sync-keep');
+    await db.open();
+    await setSetting('garmin', { apiKey: 'k' }, db);
+    const { importAll } = await import('../db/backup');
+    await importAll({ app: 'pulso', version: 1, exportedAt: '', sessions: [], templates: [], settings: [{ key: 'name', value: 'Ana' }] }, 'replace', db);
+    expect((await db.settings.get('garmin'))?.value).toEqual({ apiKey: 'k' });
+    expect((await db.settings.get('name'))?.value).toBe('Ana');
+  });
   it('la copia exportada no incluye claves', async () => {
     const db = new PulsoDB('sync-secret');
     await db.open();

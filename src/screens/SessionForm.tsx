@@ -8,6 +8,8 @@ import { fmtDistanceValue, fmtDuration, fmtNumber, fmtPace, parseDistance, parse
 import { GYM_TAGS, SPORT_ORDER, SPORTS, ZONES } from '../domain/sports';
 import type { Sport, Status, Subtype } from '../domain/types';
 import { Segmented, SportTile, useToast } from '../components/ui';
+import { RouteMap } from '../components/RouteMap';
+import { fetchGarminRoute } from '../sync/garmin';
 
 interface Draft {
   date: string;
@@ -49,6 +51,7 @@ export default function SessionForm() {
     status: defaultStatus(initialDate)
   }));
   const [repeat, setRepeat] = useState(0);
+  const [loadingRoute, setLoadingRoute] = useState(false);
   const loaded = useRef(false);
   useEffect(() => {
     if (existing && !loaded.current) {
@@ -158,6 +161,27 @@ export default function SessionForm() {
           <input type="date" aria-label="Fecha" value={d.date} onChange={(e) => e.target.value && set({ date: e.target.value, status: editId ? d.status : defaultStatus(e.target.value) })} style={{ position: 'absolute', inset: 0, opacity: 0 }} />
         </label>
       </header>
+
+      {existing?.route && (
+        <div className="mt-16">
+          <RouteMap route={existing.route} />
+          <p className="muted" style={{ fontSize: 12, margin: '6px 2px 0' }}>Recorrido de {existing.source === 'garmin' ? 'Garmin' : existing.source === 'strava' ? 'Strava' : 'archivo'}</p>
+        </div>
+      )}
+      {existing && !existing.route && existing.source === 'garmin' && existing.externalId && (existing.sport === 'run' || existing.sport === 'race' || (existing.sport === 'bike' && existing.subtype !== 'trainer') || (existing.sport === 'swim' && existing.subtype === 'open_water')) && (
+        <button className="btn-ghost mt-16" style={{ width: '100%' }} disabled={loadingRoute} onClick={async () => {
+          setLoadingRoute(true);
+          try {
+            const route = await fetchGarminRoute(existing.externalId!.replace(/^garmin:/, ''));
+            if (route) await updateSession(existing.id!, { route });
+            toast.show(route ? 'Recorrido cargado' : 'Esta actividad no tiene GPS');
+          } catch (e) {
+            toast.show(e instanceof Error ? e.message : 'No se pudo cargar el recorrido');
+          } finally {
+            setLoadingRoute(false);
+          }
+        }}>{loadingRoute ? 'Cargando recorrido…' : 'Ver recorrido en el mapa'}</button>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0,1fr))', gap: 6, marginTop: 16 }}>
         {week.map((w, i) => (

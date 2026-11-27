@@ -72,6 +72,7 @@ interface StravaActivity {
   moving_time?: number;
   elapsed_time?: number;
   trainer?: boolean;
+  map?: { summary_polyline?: string };
 }
 
 export async function fetchStrava(days = 30): Promise<{ activities: ExternalActivity[]; ignored: number }> {
@@ -96,7 +97,8 @@ export async function fetchStrava(days = 30): Promise<{ activities: ExternalActi
       ...mapped,
       title: a.name || 'Actividad Strava',
       distanceM: a.distance ? Math.round(a.distance) : undefined,
-      durationS: a.moving_time ?? a.elapsed_time
+      durationS: a.moving_time ?? a.elapsed_time,
+      route: a.map?.summary_polyline || undefined
     });
   }
   await saveStrava({ ...((await getStrava()) ?? cfg), lastSync: new Date().toISOString() });

@@ -24,6 +24,8 @@ export interface Session {
   status: Status;
   /** De dónde vienen la distancia y el tiempo, si se importaron. */
   source?: Source;
+  /** Recorrido GPS simplificado («encoded polyline»), si la actividad lo tiene. */
+  route?: string;
   /** Identificador de la actividad en origen («garmin:123», «strava:456», «file:…»), para no duplicar. */
   externalId?: string;
   createdAt: number;

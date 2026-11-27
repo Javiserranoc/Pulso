@@ -67,6 +67,8 @@ Todo se hace desde el móvil; no hay servidor de Pulso. Las claves se guardan so
 - **Strava**: crea tu propia aplicación en `strava.com/settings/api` (en *Authorization Callback Domain* pon el dominio donde está publicada la app), pega Client ID y Client Secret y pulsa *Autorizar*. Desde junio de 2026 Strava exige suscripción para usar su API en el nivel estándar. En iPhone, si la vuelta de Strava se abre en Safari en vez de en la app instalada, la página muestra el código para copiarlo y pegarlo en la app.
 - **Archivos**: .fit, .gpx, .tcx o el .zip de *Exportar original* de Garmin Connect; sin cuentas.
 - **Emparejado**: cada actividad completa la sesión planificada del mismo día y deporte (o una apuntada a mano con la misma distancia o tiempo), conservando el título y la estructura; si no hay ninguna, se crea. Nada se duplica al sincronizar varias veces ni entre fuentes.
+- **Mapa del recorrido**: si la actividad tiene GPS (Strava lo envía en el listado; los archivos .fit/.gpx/.tcx lo traen), la sesión muestra el recorrido en un mapa oscuro (Leaflet + OpenStreetMap) y una miniatura en Inicio. En las actividades de Garmin el recorrido se carga al abrir la sesión con *Ver recorrido en el mapa*. Se guarda simplificado (≤ 400 puntos) para no pesar.
+- **Sesiones borradas**: si borras una sesión importada, no vuelve a aparecer al sincronizar.
 - **Si el navegador bloquea la conexión (CORS)**: `proxy/` tiene un intermediario mínimo para Cloudflare Workers (gratis). Ver `proxy/README.md`.
 
 ## Datos

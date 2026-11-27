@@ -41,3 +41,8 @@ Inter, Space Grotesk e Instrument Serif (vía Fontsource), licencia SIL Open Fon
 - [fit-file-parser](https://github.com/jimmykane/fit-parser) — licencia MIT (lectura de archivos .fit).
 - [fflate](https://github.com/101arrowz/fflate) — licencia MIT (abrir el .zip de Garmin Connect).
 - [buffer](https://github.com/feross/buffer) — licencia MIT (compatibilidad de fit-file-parser en el navegador).
+
+## Mapas
+
+- [Leaflet](https://leafletjs.com) — licencia BSD-2-Clause.
+- Teselas de [OpenStreetMap](https://www.openstreetmap.org/copyright) (datos ODbL, © colaboradores de OpenStreetMap), cargadas desde tile.openstreetmap.org con su atribución y siguiendo su política de uso; se oscurecen con un filtro CSS.

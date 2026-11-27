@@ -16,6 +16,8 @@ export interface ExternalActivity {
   title: string;
   distanceM?: number;
   durationS?: number;
+  /** Recorrido codificado (ver domain/route.ts). */
+  route?: string;
 }
 
 type Mapped = { sport: Sport; subtype?: Subtype } | null;
@@ -87,15 +89,15 @@ export type MergeOp =
 
 /**
  * Decide qué hacer con cada actividad:
- * 1. Si ya se importó (mismo externalId) → nada.
+ * 1. Si ya se importó (mismo externalId) o se borró a propósito → nada.
  * 2. Si es la misma que otra ya importada de otra fuente ese día → nada (Garmin y Strava a la vez).
  * 3. Si hay una sesión planificada, hecha sin datos, o apuntada a mano con la misma distancia/tiempo,
  *    del mismo día y deporte → se completa con los datos (y queda enlazada a la actividad).
  * 4. Si no, se crea como sesión hecha.
  */
-export function planMerge(existing: Session[], activities: ExternalActivity[]): MergeOp[] {
+export function planMerge(existing: Session[], activities: ExternalActivity[], ignored: string[] = []): MergeOp[] {
   const used = new Set<number>();
-  const keys = new Set(existing.map((s) => s.externalId).filter(Boolean) as string[]);
+  const keys = new Set([...(existing.map((s) => s.externalId).filter(Boolean) as string[]), ...ignored]);
   const imported: Session[] = existing.filter((s) => s.source);
   const ops: MergeOp[] = [];
   const sorted = [...activities].sort((a, b) => a.date.localeCompare(b.date));
@@ -117,7 +119,7 @@ export function planMerge(existing: Session[], activities: ExternalActivity[]): 
       .filter((s) => s.status === 'planned' || s.distanceM == null || sameWorkout(s, a))
       .filter((s) => !a.subtype || !s.subtype || s.subtype === a.subtype || a.sport === 'swim')
       .sort((x, y) => Number(x.status !== 'planned') - Number(y.status !== 'planned') || x.createdAt - y.createdAt);
-    const data = { distanceM: a.sport === 'gym' ? undefined : a.distanceM, durationS: a.durationS, source: a.source, externalId: key };
+    const data = { distanceM: a.sport === 'gym' ? undefined : a.distanceM, durationS: a.durationS, source: a.source, externalId: key, ...(a.route ? { route: a.route } : {}) };
     if (candidates.length) {
       const target = candidates[0];
       used.add(target.id!);

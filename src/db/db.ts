@@ -39,6 +39,12 @@ export async function updateSession(id: number, patch: Partial<Session>, databas
 }
 
 export async function deleteSession(id: number, database = db): Promise<void> {
+  const s = await database.sessions.get(id);
+  // Si venía de Garmin/Strava/archivo, se recuerda para no volver a importarla al sincronizar.
+  if (s?.externalId) {
+    const ignored = await getSetting<string[]>('ignoredExternal', [], database);
+    if (!ignored.includes(s.externalId)) await setSetting('ignoredExternal', [...ignored, s.externalId].slice(-500), database);
+  }
   await database.sessions.delete(id);
 }
 

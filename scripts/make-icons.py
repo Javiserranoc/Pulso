@@ -1,31 +1,26 @@
-"""Genera los iconos de la PWA: fondo oscuro con un anillo de progreso azul."""
+"""Genera los iconos de la PWA: línea de latido blanca sobre fondo azul («Latido sobre azul»)."""
 from PIL import Image, ImageDraw
-import sys, os
+import os, sys
 
-BG, TRACK, BLUE = (10, 11, 13), (34, 37, 43), (47, 123, 255)
+BLUE, WHITE = (47, 123, 255), (255, 255, 255)
+# Latido en un lienzo de 100×100 (el mismo trazo que la animación de arranque).
+PULSE = [(14, 52), (33, 52), (40, 36), (50, 68), (58, 30), (65, 52), (86, 52)]
 
-def icon(size, pad_ratio=0.0, radius_ratio=0.0):
-    s = size * 4  # supersampling
-    img = Image.new('RGB', (s, s), BG)
+def icon(size, scale=1.0, stroke=7.0):
+    s = size * 4  # supersampling para bordes suaves
+    img = Image.new('RGB', (s, s), BLUE)
     d = ImageDraw.Draw(img)
-    pad = s * pad_ratio
-    inner = s - 2 * pad
-    r = inner * 0.30
-    w = inner * 0.085
-    c = s / 2
-    box = [c - r, c - r, c + r, c + r]
-    d.arc(box, 0, 360, fill=TRACK, width=int(w))
-    d.arc(box, -90, -90 + 245, fill=BLUE, width=int(w))
-    # extremos redondeados del arco
-    import math
-    for ang in (-90, -90 + 245):
-        a = math.radians(ang)
-        x, y = c + (r - w / 2) * math.cos(a), c + (r - w / 2) * math.sin(a)
-        d.ellipse([x - w / 2, y - w / 2, x + w / 2, y + w / 2], fill=BLUE)
+    k = s / 100 * scale
+    off = s * (1 - scale) / 2
+    pts = [(off + x * k, off + y * k) for x, y in PULSE]
+    w = stroke * k
+    d.line(pts, fill=WHITE, width=round(w), joint='curve')
+    for x, y in pts:  # remates y uniones redondeados
+        d.ellipse([x - w / 2, y - w / 2, x + w / 2, y + w / 2], fill=WHITE)
     return img.resize((size, size), Image.LANCZOS)
 
-out = sys.argv[1]
+out = sys.argv[1] if len(sys.argv) > 1 else 'public'
 icon(192).save(os.path.join(out, 'pwa-192.png'))
 icon(512).save(os.path.join(out, 'pwa-512.png'))
-icon(512, pad_ratio=0.1).save(os.path.join(out, 'pwa-512-maskable.png'))
+icon(512, scale=0.78).save(os.path.join(out, 'pwa-512-maskable.png'))  # dentro de la zona segura
 icon(180).save(os.path.join(out, 'apple-touch-icon.png'))

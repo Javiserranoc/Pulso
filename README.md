@@ -48,6 +48,7 @@ Puntos en movimiento unidos por líneas finas (`src/components/DotsBackground.ts
 
 ## Animaciones y vibración
 
+- Arranque «Latido» (`src/components/Splash.tsx`): se dibuja la línea de pulso, late el punto de hoy y aparece «Pulso». ~1,3 s, solo al abrir la app en frío; se salta con un toque.
 - Entrada escalonada de cada pantalla, anillo y barras que crecen, botones que se hunden al pulsar, ✓ con rebote al marcar una sesión como hecha. Todo se desactiva si el sistema tiene «Reducir movimiento».
 - Vibración (`src/lib/haptics.ts`): toque ligero en cualquier botón y doble toque al guardar o completar. En Android usa `navigator.vibrate`; en iPhone (Safari no lo soporta) usa el toque háptico del interruptor nativo de iOS 18+. Se desactiva en Ajustes.
 
@@ -68,7 +69,7 @@ src/
   components/  iconos de deporte, anillo, barras, carrusel, hoja inferior…
   screens/     Inicio, Resumen, Calendario, Plan, Formulario de sesión, Ajustes
   styles/      tokens del sistema visual (oscuro, plano, solo azul)
-scripts/make-icons.py   genera los iconos de la PWA
+scripts/make-icons.py   genera los iconos de la PWA (latido blanco sobre azul)
 ```
 
 Stack: React 19 + TypeScript + Vite, `vite-plugin-pwa` (Workbox), Dexie, React Router, Tabler Icons, fuentes Inter / Space Grotesk / Instrument Serif empaquetadas (funcionan sin conexión).

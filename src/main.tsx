@@ -16,6 +16,7 @@ import Plan from './screens/Plan';
 import SessionForm from './screens/SessionForm';
 import Settings from './screens/Settings';
 import DotsBackground from './components/DotsBackground';
+import Splash from './components/Splash';
 import { useSetting } from './db/hooks';
 import { installGlobalHaptics } from './lib/haptics';
 
@@ -68,6 +69,7 @@ function Root() {
     <>
       <DotsBackground enabled={animated} />
       <RouterProvider router={router} />
+      <Splash />
     </>
   );
 }

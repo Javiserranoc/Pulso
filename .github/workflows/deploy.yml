@@ -51,7 +51,9 @@ jobs:
         if: vars.DEPLOY_PAGES == 'true'
         uses: actions/deploy-pages@v4
       - if: vars.DEPLOY_PAGES != 'true'
-        run: echo "::notice::Despliegue omitido: crea la variable DEPLOY_PAGES=true para publicar en GitHub Pages." 
+        run: |
+          echo "::notice::Despliegue omitido. Crea la variable DEPLOY_PAGES=true para publicar en GitHub Pages."
+
 
   # Limpieza: borra cachés del repo y el artefacto de esta ejecución para no gastar almacenamiento.
   cleanup:

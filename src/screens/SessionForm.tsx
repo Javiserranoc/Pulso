@@ -269,21 +269,21 @@ export default function SessionForm() {
       {editId && (
         <div className="stack mt-20" style={{ gap: 8 }}>
           <div className="row" style={{ gap: 8 }}>
-            <button className="btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={async () => { await duplicateSession(editId, addDays(d.date, 7)); toast.show('Copiada a la semana siguiente'); }}>
+            <button className="btn-ghost" data-haptic="success" style={{ flex: 1, fontSize: 13 }} onClick={async () => { await duplicateSession(editId, addDays(d.date, 7)); toast.show('Copiada a la semana siguiente'); }}>
               <IconCopy size={16} /> Repetir en 7 días
             </button>
-            <button className="btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={async () => { const b = build(); await saveTemplate({ sport: b.sport, subtype: b.subtype, title: b.title, notes: b.notes, distanceM: b.distanceM, gymTags: b.gymTags }); toast.show('Guardada como plantilla'); }}>
+            <button className="btn-ghost" data-haptic="success" style={{ flex: 1, fontSize: 13 }} onClick={async () => { const b = build(); await saveTemplate({ sport: b.sport, subtype: b.subtype, title: b.title, notes: b.notes, distanceM: b.distanceM, gymTags: b.gymTags }); toast.show('Guardada como plantilla'); }}>
               <IconTemplate size={16} /> Guardar plantilla
             </button>
           </div>
-          <button className="btn-ghost btn-danger" onClick={async () => { if (confirm('¿Eliminar esta sesión?')) { await deleteSession(editId); nav(-1); } }}>
+          <button className="btn-ghost btn-danger" data-haptic="warning" onClick={async () => { if (confirm('¿Eliminar esta sesión?')) { await deleteSession(editId); nav(-1); } }}>
             <IconTrash size={16} /> Eliminar
           </button>
         </div>
       )}
 
       <div className="footer-cta">
-        <button className="btn-primary" onClick={save} disabled={distInvalid || timeInvalid}>
+        <button className="btn-primary" data-haptic="success" onClick={save} disabled={distInvalid || timeInvalid}>
           <IconCheck size={20} stroke={2.4} /> {editId ? 'Guardar cambios' : 'Guardar sesión'}
         </button>
       </div>

@@ -7,6 +7,7 @@ import { useSetting } from '../db/hooks';
 import { loadSampleData } from '../db/seed';
 import { today } from '../domain/dates';
 import { useToast } from '../components/ui';
+import { haptic, hapticsEnabled, setHapticsEnabled } from '../lib/haptics';
 
 export default function Settings() {
   const nav = useNavigate();
@@ -14,6 +15,7 @@ export default function Settings() {
   const name = useSetting<string>('name', '');
   const animated = useSetting<boolean>('animatedBackground', true);
   const [draftName, setDraftName] = useState<string | null>(null);
+  const [vibration, setVibration] = useState(hapticsEnabled());
   const [persisted, setPersisted] = useState<boolean | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -64,6 +66,14 @@ export default function Settings() {
         <input type="checkbox" checked={animated} onChange={(e) => setSetting('animatedBackground', e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--blue)' }} />
       </label>
 
+      <label className="card card--tight between mt-12" style={{ padding: '14px 16px' }}>
+        <span className="stack" style={{ gap: 2 }}>
+          <span style={{ fontSize: 15, fontWeight: 600 }}>Vibración</span>
+          <span className="muted" style={{ fontSize: 12 }}>Toque háptico al pulsar (iPhone con iOS 18 o superior)</span>
+        </span>
+        <input type="checkbox" data-haptic="none" checked={vibration} onChange={(e) => { setHapticsEnabled(e.target.checked); setVibration(e.target.checked); if (e.target.checked) haptic('success'); }} style={{ width: 22, height: 22, accentColor: 'var(--blue)' }} />
+      </label>
+
       <section className="card mt-20">
         <span className="label">Tus datos</span>
         <p className="muted" style={{ fontSize: 13, lineHeight: 1.5, margin: '8px 0 12px' }}>
@@ -89,7 +99,7 @@ export default function Settings() {
         <span className="label">Pruebas</span>
         <div className="stack mt-12" style={{ gap: 8 }}>
           <button className="btn-ghost" onClick={async () => { const n = await loadSampleData(); toast.show(`Cargadas ${n} sesiones de ejemplo`); }}>Cargar ejemplo de noviembre 2026</button>
-          <button className="btn-ghost btn-danger" onClick={async () => { if (confirm('¿Borrar todas las sesiones? No se puede deshacer.')) { await db.sessions.clear(); toast.show('Sesiones borradas'); } }}>Borrar todas las sesiones</button>
+          <button className="btn-ghost btn-danger" data-haptic="warning" onClick={async () => { if (confirm('¿Borrar todas las sesiones? No se puede deshacer.')) { await db.sessions.clear(); toast.show('Sesiones borradas'); } }}>Borrar todas las sesiones</button>
         </div>
       </section>
 

@@ -1,8 +1,8 @@
 /**
- * Datos de ejemplo: noviembre de 2026, sacados del Excel actual del usuario.
+ * Datos de ejemplo: noviembre de 2026, basados en un mes real de entrenamiento.
  * Las distancias de la semana 45 no estaban apuntadas en el Excel (su resumen estaba a 0).
  */
-import { addSession, db, type PulsoDB } from './db';
+import { db, type PulsoDB } from './db';
 import { today } from '../domain/dates';
 import type { Session } from '../domain/types';
 
@@ -47,10 +47,13 @@ const NOV_2026: Row[] = [
 
 /** Carga noviembre de 2026. Lo anterior a hoy queda como hecho y el resto como planificado. */
 export async function loadSampleData(database: PulsoDB = db, todayISO = today()): Promise<number> {
-  for (const r of NOV_2026) {
+  // Todo en una sola escritura para que la pantalla no pase por estados intermedios.
+  const now = Date.now();
+  const rows: Session[] = NOV_2026.map((r) => {
     const { km, m, ...rest } = r;
     const distanceM = m ?? (km != null ? km * 1000 : undefined);
-    await addSession({ notes: '', ...rest, distanceM, status: r.date < todayISO ? 'done' : 'planned' }, database);
-  }
-  return NOV_2026.length;
+    return { notes: '', ...rest, distanceM, status: r.date < todayISO ? 'done' : 'planned', createdAt: now, updatedAt: now };
+  });
+  await database.sessions.bulkAdd(rows);
+  return rows.length;
 }

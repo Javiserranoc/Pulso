@@ -17,6 +17,7 @@ import SessionForm from './screens/SessionForm';
 import Settings from './screens/Settings';
 import DotsBackground from './components/DotsBackground';
 import { useSetting } from './db/hooks';
+import { installGlobalHaptics } from './lib/haptics';
 
 function TabsLayout() {
   const tabs = [
@@ -55,6 +56,8 @@ const router = createHashRouter([
   { path: '/sesion/:id', element: <SessionForm /> },
   { path: '/ajustes', element: <Settings /> }
 ]);
+
+installGlobalHaptics();
 
 // Pide al navegador que no borre los datos locales si le falta espacio.
 navigator.storage?.persist?.().catch(() => undefined);

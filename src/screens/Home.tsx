@@ -43,10 +43,10 @@ export default function Home() {
         <section className="card mt-20">
           <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Empieza aquí</p>
           <p className="muted" style={{ margin: '6px 0 14px', fontSize: 14, lineHeight: 1.5 }}>
-            Registra tu primera sesión o carga el ejemplo de noviembre de 2026 (sacado del Excel) para ver la app con datos.
+            Registra tu primera sesión o carga un mes de ejemplo (noviembre de 2026) para ver la app con datos.
           </p>
           <div className="row">
-            <button className="btn-ghost btn-soft-blue" onClick={() => loadSampleData()}>
+            <button className="btn-ghost btn-soft-blue" data-haptic="success" onClick={() => loadSampleData()}>
               Cargar ejemplo
             </button>
             <Link className="btn-ghost" to={`/sesion/nueva?fecha=${t}`}>
@@ -174,8 +174,13 @@ function DayRow({ s, onOpen }: { s: Session; onOpen: () => void }) {
           </span>
         </button>
         {s.distanceM != null && <span className="num" style={{ fontSize: 18, fontWeight: 600 }}>{fmtDistance(s.sport, s.distanceM)}</span>}
+        {s.status === 'done' && s.sport !== 'rest' && (
+          <span className="pop" aria-label="Hecha" style={{ width: 28, height: 28, borderRadius: 14, background: 'var(--blue-soft)', color: 'var(--blue-text)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <IconCheck size={15} stroke={2.6} />
+          </span>
+        )}
         {s.status === 'planned' && s.sport !== 'rest' && (
-          <button className="btn-round" aria-label="Marcar como hecha" onClick={() => updateSession(s.id!, { status: 'done' })} style={{ width: 40, height: 40 }}>
+          <button className="btn-round" data-haptic="success" aria-label="Marcar como hecha" onClick={() => updateSession(s.id!, { status: 'done' })} style={{ width: 40, height: 40 }}>
             <IconCheck size={18} stroke={2.2} />
           </button>
         )}

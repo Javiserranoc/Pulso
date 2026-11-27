@@ -117,3 +117,39 @@ input[type='date'].field-input { color-scheme: dark; }
 .list-row:last-child { border-bottom: none; }
 .empty { font-size: 13px; color: var(--faint); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-bottom) + 92px); background: var(--surface-3); color: var(--text); padding: 10px 16px; border-radius: 20px; font-size: 14px; z-index: 50; animation: fade 0.2s ease; }
+
+/* ───────── Animaciones (solo si el sistema no pide reducir movimiento) ───────── */
+@media (prefers-reduced-motion: no-preference) {
+  /* Entrada escalonada del contenido de cada pantalla */
+  .screen > :not(.sheet):not(.sheet-backdrop):not(.toast):not(.footer-cta) { animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .screen > *:nth-child(2) { animation-delay: 30ms; }
+  .screen > *:nth-child(3) { animation-delay: 60ms; }
+  .screen > *:nth-child(4) { animation-delay: 90ms; }
+  .screen > *:nth-child(5) { animation-delay: 120ms; }
+  .screen > *:nth-child(6) { animation-delay: 150ms; }
+  .screen > *:nth-child(7) { animation-delay: 180ms; }
+  .screen > *:nth-child(n + 8) { animation-delay: 210ms; }
+
+  /* Pulsación: el elemento se hunde un poco */
+  button, a, .chip, .tile { transition: transform 0.14s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, padding 0.25s ease; }
+  button:active:not(:disabled), a:active, label.card:active { transform: scale(0.96); }
+  .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+
+  /* Barras de progreso y gráficas que crecen */
+  .bar > i { transform-origin: left center; animation: growX 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: 0.15s; }
+  .grow-y { transform-origin: center bottom; animation: growY 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+  /* Marca de «hecha» con rebote */
+  .pop { animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+  /* Pestaña activa y avisos */
+  .tabbar a { transition: background-color 0.25s ease, color 0.25s ease, padding 0.25s ease, transform 0.14s ease; }
+  .tabbar a.active span { animation: fade 0.3s ease both; }
+  .toast { animation: toastIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes growX { from { transform: scaleX(0); } }
+@keyframes growY { from { transform: scaleY(0); } }
+@keyframes pop { from { transform: scale(0); opacity: 0; } }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } }

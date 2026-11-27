@@ -13,7 +13,7 @@ Primera versión (v0.1): MVP navegable, datos guardados solo en el dispositivo.
 | **Calendario** | Cualquier año y mes, con número de semana ISO automático, puntos por sesión y competiciones marcadas. |
 | **Plan** | Semana de lunes a domingo; copiar la semana anterior; añadir desde recientes y plantillas con un toque; objetivo semanal calculado. |
 | **Registrar / editar sesión** | Formulario que cambia según el deporte. Estructura en texto libre con atajos (plantillas, recientes, distancias rápidas, botones «+ Series», «+ ×», «+ rec.»…), tiempo con ritmo calculado e intensidad Z1–Z5 opcional. Repetir en 7 días, guardar como plantilla, eliminar. |
-| **Ajustes** | Nombre, fondo animado on/off, exportar/importar copia (.json), exportar a Excel (.csv), cargar el ejemplo de noviembre de 2026. |
+| **Ajustes** | Nombre, fondo animado y vibración on/off, exportar/importar copia (.json), exportar a Excel (.csv), cargar el ejemplo de noviembre de 2026. |
 
 ## Puesta en marcha
 
@@ -45,6 +45,11 @@ Para no gastar el límite de Actions: no usa caché de npm, el artefacto de Page
 ## Fondo animado
 
 Puntos en movimiento unidos por líneas finas (`src/components/DotsBackground.tsx`). Es un único `<canvas>` fijo detrás de la interfaz, sin re-renders de React: va a ~30 fps, limita la resolución a 2×, ajusta el número de puntos al tamaño de pantalla, se pausa en segundo plano y respeta «Reducir movimiento» de iOS. Se puede apagar en Ajustes.
+
+## Animaciones y vibración
+
+- Entrada escalonada de cada pantalla, anillo y barras que crecen, botones que se hunden al pulsar, ✓ con rebote al marcar una sesión como hecha. Todo se desactiva si el sistema tiene «Reducir movimiento».
+- Vibración (`src/lib/haptics.ts`): toque ligero en cualquier botón y doble toque al guardar o completar. En Android usa `navigator.vibrate`; en iPhone (Safari no lo soporta) usa el toque háptico del interruptor nativo de iOS 18+. Se desactiva en Ajustes.
 
 ## Datos
 

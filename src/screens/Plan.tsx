@@ -40,7 +40,7 @@ export default function Plan() {
       </div>
 
       <div className="row mt-16" style={{ gap: 8 }}>
-        <button className="btn-ghost btn-soft-blue" style={{ flex: 1, fontSize: 13 }} onClick={copyPrev}>
+        <button className="btn-ghost btn-soft-blue" data-haptic="success" style={{ flex: 1, fontSize: 13 }} onClick={copyPrev}>
           <IconCopy size={16} /> Copiar semana anterior
         </button>
         {anchor === startOfWeek(t) && (
@@ -156,13 +156,13 @@ function AddSheet({ day, onClose, onAdded }: { day: string | null; onClose: () =
             <span style={{ fontSize: 15, fontWeight: 600 }}>{o.title}</span>
             <span className="muted" style={{ fontSize: 12 }}>{o.meta}</span>
           </span>
-          <button className="btn-round" style={{ width: 38, height: 38, background: 'var(--surface-3)' }} aria-label={`Añadir ${o.title}`} onClick={() => add(o)}>
+          <button className="btn-round" style={{ width: 38, height: 38, background: 'var(--surface-3)' }} aria-label={`Añadir ${o.title}`} data-haptic="success" onClick={() => add(o)}>
             <IconPlus size={16} />
           </button>
         </div>
       ))}
       <div className="row mt-12" style={{ gap: 8 }}>
-        <button className="btn-ghost" style={{ flex: 1 }} onClick={() => add({ sport: 'rest', title: 'Descanso', notes: '' })}>Descanso</button>
+        <button className="btn-ghost" data-haptic="success" style={{ flex: 1 }} onClick={() => add({ sport: 'rest', title: 'Descanso', notes: '' })}>Descanso</button>
         <button className="btn-ghost" style={{ flex: 1 }} onClick={() => nav(`/sesion/nueva?fecha=${day}&deporte=race`)}>Competición</button>
       </div>
       <Link to={`/sesion/nueva?fecha=${day}`} className="btn-primary mt-12">Sesión nueva con detalle…</Link>

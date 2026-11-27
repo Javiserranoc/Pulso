@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { IconBarbell, IconBike, IconMoon, IconRipple, IconRun, IconSwimming, IconTrophy } from '@tabler/icons-react';
 import type { Sport, Subtype } from '../domain/types';
 
@@ -35,6 +36,12 @@ export function SportTile({ sport, subtype, size = 42, on = false }: { sport: Sp
 }
 
 export function Ring({ ratio, size = 100, children }: { ratio: number; size?: number; children?: ReactNode }) {
+  // Empieza en 0 y crece hasta el valor real (la transición la hace el CSS del trazo).
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(ratio));
+    return () => cancelAnimationFrame(id);
+  }, [ratio]);
   const r = size * 0.43;
   const c = 2 * Math.PI * r;
   const w = size * 0.07;
@@ -43,7 +50,7 @@ export function Ring({ ratio, size = 100, children }: { ratio: number; size?: nu
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track)" strokeWidth={w} />
         {ratio > 0 && (
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--blue)" strokeWidth={w} strokeLinecap="round" strokeDasharray={`${Math.min(1, ratio) * c} ${c}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} style={{ transition: 'stroke-dasharray .4s ease' }} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--blue)" strokeWidth={w} strokeLinecap="round" strokeDasharray={`${Math.min(1, shown) * c} ${c}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} style={{ transition: 'stroke-dasharray .9s cubic-bezier(.2,.8,.2,1)' }} />
         )}
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>{children}</div>
@@ -68,7 +75,7 @@ export function BarChart({ data, height = 96, gap = 10 }: { data: Bar[]; height?
         {data.map((d, i) => {
           const empty = d.a + d.b === 0;
           return (
-            <div key={i} style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: d.a && d.b ? 2 : 0 }} title={`${d.label}`}>
+            <div key={i} className="grow-y" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: d.a && d.b ? 2 : 0, animationDelay: `${i * 35}ms` }} title={`${d.label}`}>
               {d.b > 0 && <div style={{ height: `${(d.b / max) * 100}%`, borderRadius: d.a ? '6px 6px 2px 2px' : 6, background: '#9CC2FF' }} />}
               {empty ? (
                 <div style={{ height: 3, borderRadius: 2, background: 'var(--track)' }} />
@@ -133,7 +140,8 @@ export function Sheet({ open, onClose, label, children }: { open: boolean; onClo
     return () => window.removeEventListener('keydown', k);
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // Portal al <body>: así queda por encima de la barra de pestañas y del fondo animado.
+  return createPortal(
     <>
       <div className="sheet-backdrop" onClick={onClose} />
       <div className="sheet" role="dialog" aria-modal="true" aria-label={label}>
@@ -142,7 +150,8 @@ export function Sheet({ open, onClose, label, children }: { open: boolean; onClo
           {children}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 

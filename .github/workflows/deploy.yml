@@ -10,6 +10,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write # para borrar cachés y artefactos al terminar
 
 concurrency:
   group: pages
@@ -18,28 +19,53 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # Sin caché de npm a propósito: no ocupa almacenamiento de Actions.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && vars.DEPLOY_PAGES == 'true'
         with:
           path: dist
+          retention-days: 1
 
+  # Solo despliega si existe la variable del repo DEPLOY_PAGES=true
+  # (Settings → Secrets and variables → Actions → Variables) y Pages está activado con «GitHub Actions».
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && vars.DEPLOY_PAGES == 'true'
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-        continue-on-error: true
+
+  # Limpieza: borra cachés del repo y el artefacto de esta ejecución para no gastar almacenamiento.
+  cleanup:
+    if: always()
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Borrar cachés
+        run: |
+          for id in $(gh api "repos/$REPO/actions/caches" --paginate -q '.actions_caches[].id'); do
+            gh api -X DELETE "repos/$REPO/actions/caches/$id" || true
+          done
+      - name: Borrar artefactos de esta ejecución
+        run: |
+          for id in $(gh api "repos/$REPO/actions/runs/${{ github.run_id }}/artifacts" -q '.artifacts[].id'); do
+            gh api -X DELETE "repos/$REPO/actions/artifacts/$id" || true
+          done
